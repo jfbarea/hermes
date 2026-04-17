@@ -11,8 +11,8 @@ import json
 import sys
 from pathlib import Path
 
-# Añade netlify/functions al path para poder importar generate y prompt_builder
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "netlify" / "functions"))
+# Añade netlify/functions/generate al path para poder importar generate y prompt_builder
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "netlify" / "functions" / "generate"))
 
 from generate import handler
 

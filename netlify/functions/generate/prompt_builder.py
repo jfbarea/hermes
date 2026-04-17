@@ -10,8 +10,15 @@ from constants import (
     MAX_BODY_CHARS,
 )
 
-# La función se ejecuta con el repo como raíz de trabajo en Netlify
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+# Busca el directorio 'context/' subiendo desde la ubicación de este archivo.
+# - En Lambda (netlify deploy): los archivos bundleados están en /var/task/,
+#   por lo que context/ está en el mismo nivel que este módulo.
+# - En local (netlify/functions/generate/): sube hasta la raíz del repo.
+_HERE = Path(__file__).resolve().parent
+_REPO_ROOT = next(
+    (p for p in [_HERE, *_HERE.parents] if (p / "context").exists()),
+    _HERE,
+)
 _CONTEXT_FILE = _REPO_ROOT / "context" / "context.md"
 _EXAMPLES_DIR = _REPO_ROOT / "context" / "examples"
 
