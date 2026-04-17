@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   Loader2,
   Mail,
+  ExternalLink,
 } from "lucide-react";
 
 type ContextSource = "google_doc" | "fallback";
@@ -60,6 +61,11 @@ export default function Home() {
 
   const canGenerate = emailText.trim().length > 0 && !loading;
 
+  const docId = process.env.NEXT_PUBLIC_CONTEXT_GOOGLE_DOC_ID;
+  const docUrl = docId
+    ? `https://docs.google.com/document/d/${docId}/edit`
+    : null;
+
   return (
     <main className="min-h-screen bg-background flex flex-col items-center justify-start px-4 py-10 sm:py-16">
       {/* Subtle background glow */}
@@ -107,23 +113,40 @@ export default function Home() {
               rows={8}
               className="resize-none text-sm sm:text-base focus-visible:ring-primary/60 bg-background/60 min-h-[180px] sm:min-h-[220px]"
             />
-            <Button
-              onClick={handleGenerate}
-              disabled={!canGenerate}
-              className="w-full h-11 sm:h-12 text-sm sm:text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-lg hover:shadow-primary/20"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generando borrador...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Generar respuesta
-                </>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleGenerate}
+                disabled={!canGenerate}
+                className="flex-1 h-11 sm:h-12 text-sm sm:text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-lg hover:shadow-primary/20"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generando borrador...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generar respuesta
+                  </>
+                )}
+              </Button>
+              {docUrl && (
+                <a
+                  href={docUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Abrir Google Doc de contexto"
+                  className={buttonVariants({
+                    variant: "outline",
+                    className:
+                      "h-11 sm:h-12 shrink-0 border-border/60 hover:border-primary/60 transition-colors",
+                  })}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
               )}
-            </Button>
+            </div>
           </CardContent>
         </Card>
 
