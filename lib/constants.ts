@@ -11,7 +11,7 @@ export const GOOGLE_DOC_ID = process.env.CONTEXT_GOOGLE_DOC_ID ?? "";
 export const GOOGLE_DOC_EXPORT_URL = `https://docs.google.com/document/d/${GOOGLE_DOC_ID}/export?format=txt`;
 
 /** Tiempo máximo de espera (ms) para descargar el Google Doc. */
-export const FETCH_TIMEOUT_MS = 5_000;
+export const FETCH_TIMEOUT_MS = 10_000;
 
 /** Caracteres máximos del email de entrada antes de truncar. */
 export const MAX_BODY_CHARS = 6_000;

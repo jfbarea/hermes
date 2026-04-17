@@ -62,7 +62,8 @@ export async function buildPrompt(emailText: string): Promise<PromptResult> {
   try {
     context = await fetchGoogleDoc();
     contextSource = "google_doc";
-  } catch {
+  } catch (err) {
+    console.error("[hermes] fetchGoogleDoc failed:", err);
     const contextFile = join(process.cwd(), "context", "context.md");
     context = existsSync(contextFile)
       ? readFileSync(contextFile, "utf-8")
