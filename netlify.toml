@@ -1,29 +1,10 @@
 [build]
-  # Hito 1: sin frontend todavía, se sirve public/ como placeholder.
-  # Hito 2: cambiar a `command = "npm run build"` y `publish = "dist"`
-  # cuando el frontend React esté listo.
-  command = ""
-  publish = "public"
+  command = "npm run build"
+  publish = ".next"
 
-# Configuración de desarrollo local.
-# Sirve public/ como placeholder hasta que el frontend (Hito 2) esté listo.
-# Sin esta sección, netlify dev intenta auto-detectar el framework y puede
-# no registrar las funciones Python correctamente.
 [dev]
-  publish = "public"
-  port = 8888
+  command = "npm run dev"
+  targetPort = 3000
 
-[functions]
-  directory = "netlify/functions"
-  included_files = ["context/**"]
-
-[[redirects]]
-  from = "/api/generate"
-  to = "/.netlify/functions/generate"
-  status = 200
-
-# SPA fallback (activo en producción; en dev se sirve public/)
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
