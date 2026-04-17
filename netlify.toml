@@ -1,6 +1,9 @@
 [build]
-  command = "npm run build"
-  publish = "dist"
+  # Hito 1: sin frontend todavía, se sirve public/ como placeholder.
+  # Hito 2: cambiar a `command = "npm run build"` y `publish = "dist"`
+  # cuando el frontend React esté listo.
+  command = ""
+  publish = "public"
 
 # Configuración de desarrollo local.
 # Sirve public/ como placeholder hasta que el frontend (Hito 2) esté listo.
