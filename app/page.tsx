@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import {
   Loader2,
   Mail,
   ExternalLink,
+  LogOut,
 } from "lucide-react";
 
 type ContextSource = "google_doc" | "fallback";
@@ -26,6 +28,13 @@ export default function Home() {
   const [contextSource, setContextSource] = useState<ContextSource | null>(
     null
   );
+
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch("/api/auth", { method: "DELETE" });
+    router.push("/login");
+  };
 
   const handleGenerate = async () => {
     if (!emailText.trim()) return;
@@ -75,14 +84,28 @@ export default function Home() {
 
       <div className="relative z-10 w-full max-w-2xl lg:max-w-3xl space-y-6">
         {/* Header */}
-        <header className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-3">
-            <Mail className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-              Hermes
-            </h1>
+        <header className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex-1" />
+            <div className="flex items-center gap-3">
+              <Mail className="h-8 w-8 text-primary" />
+              <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
+                Hermes
+              </h1>
+            </div>
+            <div className="flex-1 flex justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                title="Cerrar sesión"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-          <p className="text-muted-foreground text-sm sm:text-base">
+          <p className="text-muted-foreground text-sm sm:text-base text-center">
             Genera borradores de respuesta para emails de alumnos PIR
           </p>
         </header>
