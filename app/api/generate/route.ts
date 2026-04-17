@@ -1,11 +1,26 @@
 import Anthropic, { APIError } from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { buildPrompt } from "@/lib/prompt-builder";
+import { rateLimit, getClientIp } from "@/lib/rate-limiter";
 
 const MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 1024;
 
 export async function POST(request: NextRequest) {
+  // 20 peticiones por IP por minuto
+  const ip = getClientIp(request);
+  const { allowed, retryAfter } = rateLimit(`generate:${ip}`, 20, 60 * 1000);
+
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Límite de peticiones alcanzado. Espera un momento." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(retryAfter) },
+      }
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
