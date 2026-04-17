@@ -1,0 +1,12 @@
+{
+  "name": "hermes",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "pytest tests/ -v",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0"
+  }
+}
