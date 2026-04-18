@@ -2,22 +2,32 @@ import Anthropic, { APIError } from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { buildPrompt } from "@/lib/prompt-builder";
 import { rateLimit, getClientIp } from "@/lib/rate-limiter";
+import { isOverBudget, recordUsage } from "@/lib/usage";
+import { MONTHLY_LIMIT_USD } from "@/lib/constants";
 
 const MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 1024;
 
 export async function POST(request: NextRequest) {
-  // 20 peticiones por IP por minuto
+  // Rate limit: 20 peticiones por IP por minuto
   const ip = getClientIp(request);
   const { allowed, retryAfter } = rateLimit(`generate:${ip}`, 20, 60 * 1000);
 
   if (!allowed) {
     return NextResponse.json(
       { error: "Límite de peticiones alcanzado. Espera un momento." },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
+  }
+
+  // Control de presupuesto mensual
+  if (await isOverBudget()) {
+    return NextResponse.json(
       {
-        status: 429,
-        headers: { "Retry-After": String(retryAfter) },
-      }
+        error: `Límite mensual de $${MONTHLY_LIMIT_USD} alcanzado. Contacta al administrador.`,
+        budget_exceeded: true,
+      },
+      { status: 402 }
     );
   }
 
@@ -63,9 +73,24 @@ export async function POST(request: NextRequest) {
       messages: [{ role: "user", content: userMessage }],
     });
 
+    // Registrar uso real con los tokens devueltos por Anthropic
+    const { cost, monthlySpend } = await recordUsage(
+      response.usage.input_tokens,
+      response.usage.output_tokens
+    );
+
     const draft = (response.content[0] as { text: string }).text;
 
-    return NextResponse.json({ draft, context_source: contextSource });
+    return NextResponse.json({
+      draft,
+      context_source: contextSource,
+      usage: {
+        input_tokens: response.usage.input_tokens,
+        output_tokens: response.usage.output_tokens,
+        cost: Math.round(cost * 10_000) / 10_000,
+        monthly_spend: Math.round(monthlySpend * 10_000) / 10_000,
+      },
+    });
   } catch (error) {
     if (error instanceof APIError) {
       return NextResponse.json(

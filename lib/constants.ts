@@ -15,3 +15,18 @@ export const FETCH_TIMEOUT_MS = 10_000;
 
 /** Caracteres máximos del email de entrada antes de truncar. */
 export const MAX_BODY_CHARS = 6_000;
+
+// ---------------------------------------------------------------------------
+// Precios Claude Sonnet 4.6 (USD por millón de tokens)
+// ---------------------------------------------------------------------------
+export const PRICE_INPUT_PER_M = 3.0;
+export const PRICE_OUTPUT_PER_M = 15.0;
+
+/** Límite de gasto mensual en USD antes de bloquear nuevas peticiones. */
+export const MONTHLY_LIMIT_USD = 5.0;
+
+/** Tokens de sistema estimados (prompt + ejemplos) para la estimación de coste. */
+export const ESTIMATED_SYSTEM_TOKENS = 3_000;
+
+/** Tokens de salida esperados (mitad del máximo) para la estimación de coste. */
+export const ESTIMATED_OUTPUT_TOKENS = 512;

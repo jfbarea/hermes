@@ -7,6 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Sparkles,
   Copy,
   Check,
@@ -16,8 +26,38 @@ import {
   ExternalLink,
   LogOut,
 } from "lucide-react";
+import {
+  PRICE_INPUT_PER_M,
+  PRICE_OUTPUT_PER_M,
+  MONTHLY_LIMIT_USD,
+  ESTIMATED_SYSTEM_TOKENS,
+  ESTIMATED_OUTPUT_TOKENS,
+} from "@/lib/constants";
 
 type ContextSource = "google_doc" | "fallback";
+
+interface UsageInfo {
+  monthlySpend: number;
+  remaining: number;
+  limitReached: boolean;
+}
+
+interface PendingConfirm {
+  estimatedCost: number;
+  monthlySpend: number;
+}
+
+function estimateCost(emailText: string): number {
+  const inputTokens = ESTIMATED_SYSTEM_TOKENS + Math.ceil(emailText.length / 4);
+  return (
+    (inputTokens / 1_000_000) * PRICE_INPUT_PER_M +
+    (ESTIMATED_OUTPUT_TOKENS / 1_000_000) * PRICE_OUTPUT_PER_M
+  );
+}
+
+function fmt(usd: number): string {
+  return `$${usd.toFixed(4)}`;
+}
 
 export default function Home() {
   const [emailText, setEmailText] = useState("");
@@ -25,9 +65,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [contextSource, setContextSource] = useState<ContextSource | null>(
-    null
-  );
+  const [contextSource, setContextSource] = useState<ContextSource | null>(null);
+  const [usage, setUsage] = useState<UsageInfo | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
   const router = useRouter();
 
@@ -36,25 +76,63 @@ export default function Home() {
     router.push("/login");
   };
 
-  const handleGenerate = async () => {
+  // Paso 1: consultar uso actual y mostrar diálogo de confirmación
+  const handleGenerateClick = async () => {
     if (!emailText.trim()) return;
-    setLoading(true);
     setError(null);
+
+    try {
+      const res = await fetch("/api/usage");
+      const data: UsageInfo = await res.json();
+      setUsage(data);
+
+      if (data.limitReached) {
+        setError(`Límite mensual de $${MONTHLY_LIMIT_USD} alcanzado. No se pueden generar más respuestas este mes.`);
+        return;
+      }
+
+      setPendingConfirm({
+        estimatedCost: estimateCost(emailText),
+        monthlySpend: data.monthlySpend,
+      });
+    } catch {
+      // Si no se puede consultar el uso, continuar sin confirmación
+      await doGenerate();
+    }
+  };
+
+  // Paso 2: llamada real a la API tras confirmar
+  const doGenerate = async () => {
+    setPendingConfirm(null);
+    setLoading(true);
     setDraft("");
     setContextSource(null);
+
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email_text: emailText }),
       });
+
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? `Error ${res.status}`);
       }
+
       const data = await res.json();
       setDraft(data.draft);
       setContextSource(data.context_source ?? null);
+
+      // Actualizar el uso mostrado con los datos reales
+      if (data.usage) {
+        const spend = data.usage.monthly_spend;
+        setUsage({
+          monthlySpend: spend,
+          remaining: Math.max(0, MONTHLY_LIMIT_USD - spend),
+          limitReached: spend >= MONTHLY_LIMIT_USD,
+        });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido");
     } finally {
@@ -77,10 +155,43 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background flex flex-col items-center justify-start px-4 py-10 sm:py-16">
-      {/* Subtle background glow */}
+      {/* Background glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-primary/5 blur-[120px]" />
       </div>
+
+      {/* Diálogo de confirmación de coste */}
+      <AlertDialog open={!!pendingConfirm} onOpenChange={(open) => { if (!open) setPendingConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar generación</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-sm">
+              <div>
+                <p>
+                  Coste estimado de esta llamada:{" "}
+                  <span className="font-semibold text-foreground">
+                    {pendingConfirm ? fmt(pendingConfirm.estimatedCost) : "—"}
+                  </span>
+                </p>
+                <p>
+                  Gasto acumulado este mes:{" "}
+                  <span className="font-semibold text-foreground">
+                    {pendingConfirm ? fmt(pendingConfirm.monthlySpend) : "—"}
+                  </span>{" "}
+                  / ${MONTHLY_LIMIT_USD}
+                </p>
+                <p className="text-muted-foreground text-xs pt-1">
+                  El coste real puede variar ligeramente según la longitud de la respuesta generada.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={doGenerate}>Continuar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="relative z-10 w-full max-w-2xl lg:max-w-3xl space-y-6">
         {/* Header */}
@@ -93,7 +204,12 @@ export default function Home() {
                 Hermes
               </h1>
             </div>
-            <div className="flex-1 flex justify-end">
+            <div className="flex-1 flex justify-end items-center gap-2">
+              {usage && (
+                <span className="text-xs text-muted-foreground">
+                  {fmt(usage.monthlySpend)} / ${MONTHLY_LIMIT_USD}
+                </span>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -138,7 +254,7 @@ export default function Home() {
             />
             <div className="flex gap-2">
               <Button
-                onClick={handleGenerate}
+                onClick={handleGenerateClick}
                 disabled={!canGenerate}
                 className="flex-1 h-11 sm:h-12 text-sm sm:text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-lg hover:shadow-primary/20"
               >
