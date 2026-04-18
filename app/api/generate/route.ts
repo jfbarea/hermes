@@ -2,8 +2,7 @@ import Anthropic, { APIError } from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { buildPrompt } from "@/lib/prompt-builder";
 import { rateLimit, getClientIp } from "@/lib/rate-limiter";
-import { isOverBudget, recordUsage } from "@/lib/usage";
-import { MONTHLY_LIMIT_USD } from "@/lib/constants";
+import { recordUsage } from "@/lib/usage";
 
 const MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 1024;
@@ -17,17 +16,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "Límite de peticiones alcanzado. Espera un momento." },
       { status: 429, headers: { "Retry-After": String(retryAfter) } }
-    );
-  }
-
-  // Control de presupuesto mensual
-  if (await isOverBudget()) {
-    return NextResponse.json(
-      {
-        error: `Límite mensual de $${MONTHLY_LIMIT_USD} alcanzado. Contacta al administrador.`,
-        budget_exceeded: true,
-      },
-      { status: 402 }
     );
   }
 

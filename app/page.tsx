@@ -76,7 +76,7 @@ export default function Home() {
     router.push("/login");
   };
 
-  // Paso 1: consultar uso actual y mostrar diálogo de confirmación
+  // Paso 1: consultar uso; si se ha superado el límite pedir confirmación
   const handleGenerateClick = async () => {
     if (!emailText.trim()) return;
     setError(null);
@@ -87,18 +87,18 @@ export default function Home() {
       setUsage(data);
 
       if (data.limitReached) {
-        setError(`Límite mensual de $${MONTHLY_LIMIT_USD} alcanzado. No se pueden generar más respuestas este mes.`);
+        // Mostrar diálogo para que el usuario decida si desbloquear
+        setPendingConfirm({
+          estimatedCost: estimateCost(emailText),
+          monthlySpend: data.monthlySpend,
+        });
         return;
       }
-
-      setPendingConfirm({
-        estimatedCost: estimateCost(emailText),
-        monthlySpend: data.monthlySpend,
-      });
     } catch {
-      // Si no se puede consultar el uso, continuar sin confirmación
-      await doGenerate();
+      // Si no se puede consultar el uso, continuar igualmente
     }
+
+    await doGenerate();
   };
 
   // Paso 2: llamada real a la API tras confirmar
@@ -164,24 +164,27 @@ export default function Home() {
       <AlertDialog open={!!pendingConfirm} onOpenChange={(open) => { if (!open) setPendingConfirm(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar generación</AlertDialogTitle>
+            <AlertDialogTitle>Límite mensual superado</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2 text-sm">
               <div>
+                <p>
+                  Has superado el límite mensual de{" "}
+                  <span className="font-semibold text-foreground">${MONTHLY_LIMIT_USD}</span>.
+                </p>
+                <p className="pt-1">
+                  Gasto acumulado este mes:{" "}
+                  <span className="font-semibold text-foreground">
+                    {pendingConfirm ? fmt(pendingConfirm.monthlySpend) : "—"}
+                  </span>
+                </p>
                 <p>
                   Coste estimado de esta llamada:{" "}
                   <span className="font-semibold text-foreground">
                     {pendingConfirm ? fmt(pendingConfirm.estimatedCost) : "—"}
                   </span>
                 </p>
-                <p>
-                  Gasto acumulado este mes:{" "}
-                  <span className="font-semibold text-foreground">
-                    {pendingConfirm ? fmt(pendingConfirm.monthlySpend) : "—"}
-                  </span>{" "}
-                  / ${MONTHLY_LIMIT_USD}
-                </p>
                 <p className="text-muted-foreground text-xs pt-1">
-                  El coste real puede variar ligeramente según la longitud de la respuesta generada.
+                  ¿Quieres continuar de todas formas?
                 </p>
               </div>
             </AlertDialogDescription>
