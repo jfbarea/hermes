@@ -215,7 +215,7 @@ export default function Home() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="relative z-10 w-full max-w-2xl lg:max-w-3xl space-y-6">
+      <div className="relative z-10 w-full max-w-2xl lg:max-w-5xl space-y-6">
         {/* Header */}
         <header className="space-y-2">
           <div className="flex items-center justify-between">
@@ -259,125 +259,129 @@ export default function Home() {
           </div>
         )}
 
-        {/* Input card */}
-        <Card className="border-border/60 bg-card/80 backdrop-blur-sm shadow-2xl">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold text-muted-foreground uppercase tracking-wider">
-              Email recibido
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative">
-              <Textarea
-                placeholder="Pega aquí el email del alumno..."
-                value={emailText}
-                onChange={(e) => setEmailText(e.target.value)}
-                rows={8}
-                className="resize-none text-sm sm:text-base focus-visible:ring-primary/60 bg-background/60 min-h-[180px] sm:min-h-[220px] pr-10"
-              />
-              {emailText && (
-                <button
-                  onClick={handleClear}
-                  title="Limpiar"
-                  className="absolute top-2 right-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleGenerateClick}
-                disabled={!canGenerate}
-                className="flex-1 h-11 sm:h-12 text-sm sm:text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-lg hover:shadow-primary/20"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generando borrador...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Generar respuesta
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handlePaste}
-                title="Pegar desde portapapeles"
-                className="h-11 sm:h-12 shrink-0 border-border/60 hover:border-primary/60 transition-colors"
-              >
-                <ClipboardPaste className="h-4 w-4" />
-              </Button>
-              {docUrl && (
-                <a
-                  href={docUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Abrir Google Doc de contexto"
-                  className={buttonVariants({
-                    variant: "outline",
-                    className:
-                      "h-11 sm:h-12 shrink-0 border-border/60 hover:border-primary/60 transition-colors",
-                  })}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Error */}
-        {error && (
-          <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-destructive text-sm">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Result card */}
-        {draft && (
-          <Card className="border-border/60 bg-card/80 backdrop-blur-sm shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <div className="flex items-center gap-2">
+        {/* Main content: two columns on lg when draft is visible */}
+        <div className={`grid gap-6 ${draft ? "lg:grid-cols-2 lg:items-start" : ""}`}>
+          {/* Left column: input + error */}
+          <div className="space-y-4">
+            <Card className="border-border/60 bg-card/80 backdrop-blur-sm shadow-2xl">
+              <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold text-muted-foreground uppercase tracking-wider">
-                  Borrador de respuesta
+                  Email recibido
                 </CardTitle>
-                {contextSource === "google_doc" && (
-                  <Badge variant="secondary" className="text-xs">
-                    Contexto actualizado
-                  </Badge>
-                )}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="relative">
+                  <Textarea
+                    placeholder="Pega aquí el email del alumno..."
+                    value={emailText}
+                    onChange={(e) => setEmailText(e.target.value)}
+                    rows={8}
+                    className="resize-none text-sm sm:text-base focus-visible:ring-primary/60 bg-background/60 min-h-[180px] sm:min-h-[220px] lg:min-h-[360px] pr-10"
+                  />
+                  {emailText && (
+                    <button
+                      onClick={handleClear}
+                      title="Limpiar"
+                      className="absolute top-2 right-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleGenerateClick}
+                    disabled={!canGenerate}
+                    className="flex-1 h-11 sm:h-12 text-sm sm:text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-lg hover:shadow-primary/20"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generando borrador...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Generar respuesta
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handlePaste}
+                    title="Pegar desde portapapeles"
+                    className="h-11 sm:h-12 shrink-0 border-border/60 hover:border-primary/60 transition-colors"
+                  >
+                    <ClipboardPaste className="h-4 w-4" />
+                  </Button>
+                  {docUrl && (
+                    <a
+                      href={docUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Abrir Google Doc de contexto"
+                      className={buttonVariants({
+                        variant: "outline",
+                        className:
+                          "h-11 sm:h-12 shrink-0 border-border/60 hover:border-primary/60 transition-colors",
+                      })}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {error && (
+              <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-destructive text-sm">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopy}
-                className="shrink-0 h-8 gap-1.5 text-xs border-border/60 hover:border-primary/60 transition-colors"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 text-green-400" />
-                    Copiado
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5" />
-                    Copiar
-                  </>
-                )}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <pre className="whitespace-pre-wrap text-sm sm:text-base leading-relaxed font-sans text-foreground/90">
-                {draft}
-              </pre>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </div>
+
+          {/* Right column: draft */}
+          {draft && (
+            <Card className="border-border/60 bg-card/80 backdrop-blur-sm shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base font-semibold text-muted-foreground uppercase tracking-wider">
+                    Borrador de respuesta
+                  </CardTitle>
+                  {contextSource === "google_doc" && (
+                    <Badge variant="secondary" className="text-xs">
+                      Contexto actualizado
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopy}
+                  className="shrink-0 h-8 gap-1.5 text-xs border-border/60 hover:border-primary/60 transition-colors"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-green-400" />
+                      Copiado
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" />
+                      Copiar
+                    </>
+                  )}
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <pre className="whitespace-pre-wrap text-sm sm:text-base leading-relaxed font-sans text-foreground/90">
+                  {draft}
+                </pre>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </main>
   );
