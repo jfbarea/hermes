@@ -25,6 +25,8 @@ import {
   Mail,
   ExternalLink,
   LogOut,
+  X,
+  ClipboardPaste,
 } from "lucide-react";
 import {
   PRICE_INPUT_PER_M,
@@ -146,6 +148,23 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleClear = () => {
+    setEmailText("");
+    setDraft("");
+    setError(null);
+    setContextSource(null);
+    setUsage(null);
+  };
+
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setEmailText(text);
+    } catch {
+      // El usuario puede no haber concedido permiso de portapapeles
+    }
+  };
+
   const canGenerate = emailText.trim().length > 0 && !loading;
 
   const docId = process.env.NEXT_PUBLIC_CONTEXT_GOOGLE_DOC_ID;
@@ -248,13 +267,24 @@ export default function Home() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Textarea
-              placeholder="Pega aquí el email del alumno..."
-              value={emailText}
-              onChange={(e) => setEmailText(e.target.value)}
-              rows={8}
-              className="resize-none text-sm sm:text-base focus-visible:ring-primary/60 bg-background/60 min-h-[180px] sm:min-h-[220px]"
-            />
+            <div className="relative">
+              <Textarea
+                placeholder="Pega aquí el email del alumno..."
+                value={emailText}
+                onChange={(e) => setEmailText(e.target.value)}
+                rows={8}
+                className="resize-none text-sm sm:text-base focus-visible:ring-primary/60 bg-background/60 min-h-[180px] sm:min-h-[220px] pr-10"
+              />
+              {emailText && (
+                <button
+                  onClick={handleClear}
+                  title="Limpiar"
+                  className="absolute top-2 right-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button
                 onClick={handleGenerateClick}
@@ -272,6 +302,14 @@ export default function Home() {
                     Generar respuesta
                   </>
                 )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handlePaste}
+                title="Pegar desde portapapeles"
+                className="h-11 sm:h-12 shrink-0 border-border/60 hover:border-primary/60 transition-colors"
+              >
+                <ClipboardPaste className="h-4 w-4" />
               </Button>
               {docUrl && (
                 <a
