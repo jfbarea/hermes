@@ -4,6 +4,18 @@ import {
   MONTHLY_LIMIT_USD,
 } from "./constants";
 
+export interface UsageEntry {
+  ts: string;
+  in: number;
+  out: number;
+  cost: number;
+}
+
+interface MonthBlob {
+  spend: number;
+  entries: UsageEntry[];
+}
+
 /** Devuelve la clave del mes actual, p.ej. "2026-04" */
 export function monthKey(): string {
   const now = new Date();
@@ -22,7 +34,7 @@ export function calculateCost(inputTokens: number, outputTokens: number): number
 // Persistencia: Netlify Blobs en producción, Map en memoria en dev local
 // ---------------------------------------------------------------------------
 
-const memFallback = new Map<string, number>();
+const memFallback = new Map<string, MonthBlob>();
 
 async function getBlobStore() {
   try {
@@ -33,20 +45,39 @@ async function getBlobStore() {
   }
 }
 
-export async function getMonthlySpend(): Promise<number> {
-  const key = monthKey();
+async function readBlob(key: string): Promise<MonthBlob> {
   const store = await getBlobStore();
-
   if (store) {
     try {
-      const data = await store.get(key, { type: "json" }) as { spend: number } | null;
-      return data?.spend ?? 0;
+      const data = await store.get(key, { type: "json" }) as Partial<MonthBlob> | null;
+      return { spend: data?.spend ?? 0, entries: data?.entries ?? [] };
     } catch {
-      return memFallback.get(key) ?? 0;
+      return memFallback.get(key) ?? { spend: 0, entries: [] };
     }
   }
+  return memFallback.get(key) ?? { spend: 0, entries: [] };
+}
 
-  return memFallback.get(key) ?? 0;
+async function writeBlob(key: string, blob: MonthBlob): Promise<void> {
+  const store = await getBlobStore();
+  if (store) {
+    try {
+      await store.set(key, JSON.stringify(blob));
+      return;
+    } catch {
+      // fall through to mem
+    }
+  }
+  memFallback.set(key, blob);
+}
+
+export async function getMonthlySpend(): Promise<number> {
+  const { spend } = await readBlob(monthKey());
+  return spend;
+}
+
+export async function getMonthlyData(): Promise<{ spend: number; entries: UsageEntry[] }> {
+  return readBlob(monthKey());
 }
 
 export async function recordUsage(
@@ -54,22 +85,17 @@ export async function recordUsage(
   outputTokens: number
 ): Promise<{ cost: number; monthlySpend: number }> {
   const cost = calculateCost(inputTokens, outputTokens);
-  const current = await getMonthlySpend();
-  const newTotal = current + cost;
   const key = monthKey();
-
-  const store = await getBlobStore();
-  if (store) {
-    try {
-      await store.set(key, JSON.stringify({ spend: newTotal }));
-    } catch {
-      memFallback.set(key, newTotal);
-    }
-  } else {
-    memFallback.set(key, newTotal);
-  }
-
-  return { cost, monthlySpend: newTotal };
+  const current = await readBlob(key);
+  const newBlob: MonthBlob = {
+    spend: current.spend + cost,
+    entries: [
+      ...current.entries,
+      { ts: new Date().toISOString(), in: inputTokens, out: outputTokens, cost },
+    ],
+  };
+  await writeBlob(key, newBlob);
+  return { cost, monthlySpend: newBlob.spend };
 }
 
 export async function isOverBudget(): Promise<boolean> {

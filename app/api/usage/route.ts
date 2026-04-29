@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
-import { getMonthlySpend, monthKey } from "@/lib/usage";
+import { getMonthlyData, monthKey } from "@/lib/usage";
 import { MONTHLY_LIMIT_USD } from "@/lib/constants";
 
 export async function GET() {
-  const monthlySpend = await getMonthlySpend();
+  const { spend, entries } = await getMonthlyData();
   return NextResponse.json({
-    monthlySpend,
+    monthlySpend: spend,
     monthlyLimit: MONTHLY_LIMIT_USD,
-    remaining: Math.max(0, MONTHLY_LIMIT_USD - monthlySpend),
+    remaining: Math.max(0, MONTHLY_LIMIT_USD - spend),
     month: monthKey(),
-    limitReached: monthlySpend >= MONTHLY_LIMIT_USD,
+    limitReached: spend >= MONTHLY_LIMIT_USD,
+    entries,
   });
 }

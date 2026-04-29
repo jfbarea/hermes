@@ -27,6 +27,7 @@ import {
   LogOut,
   X,
   ClipboardPaste,
+  BarChart2,
 } from "lucide-react";
 import {
   PRICE_INPUT_PER_M,
@@ -232,6 +233,13 @@ export default function Home() {
                   {fmt(usage.monthlySpend)} / ${MONTHLY_LIMIT_USD}
                 </span>
               )}
+              <a
+                href="/dashboard"
+                title="Dashboard de uso"
+                className="inline-flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              >
+                <BarChart2 className="h-4 w-4" />
+              </a>
               <Button
                 variant="ghost"
                 size="sm"
