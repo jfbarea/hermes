@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { getMonthlyData, monthKey, type UsageEntry } from "@/lib/usage";
 import { MONTHLY_LIMIT_USD } from "@/lib/constants";
