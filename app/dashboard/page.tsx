@@ -36,7 +36,9 @@ export default async function DashboardPage() {
   const pct = Math.min(100, (spend / MONTHLY_LIMIT_USD) * 100);
   const days = dailyTotals(entries);
   const maxDayCost = days.reduce((m, d) => Math.max(m, d.cost), 0);
-  const avgCost = entries.length > 0 ? spend / entries.length : 0;
+  const trackedSpend = entries.reduce((s, e) => s + e.cost, 0);
+  const untrackedSpend = Math.max(0, spend - trackedSpend);
+  const avgCost = entries.length > 0 ? trackedSpend / entries.length : 0;
 
   return (
     <main className="min-h-screen bg-background px-4 py-10 sm:py-16">
@@ -59,7 +61,7 @@ export default async function DashboardPage() {
           {[
             { label: "Gasto este mes", value: fmt(spend) },
             { label: "Límite mensual", value: `$${MONTHLY_LIMIT_USD}` },
-            { label: "Llamadas", value: String(entries.length) },
+            { label: "Llamadas registradas", value: String(entries.length) },
             { label: "Coste medio/llamada", value: entries.length ? fmt(avgCost) : "—" },
           ].map(({ label, value }) => (
             <div
@@ -119,34 +121,44 @@ export default async function DashboardPage() {
               Llamadas ({entries.length})
             </h2>
           </div>
-          {entries.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Sin llamadas registradas este mes.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border/40 text-xs text-muted-foreground uppercase tracking-wider">
-                    <th className="px-4 py-2 text-left font-medium">Fecha</th>
-                    <th className="px-4 py-2 text-right font-medium">Tokens entrada</th>
-                    <th className="px-4 py-2 text-right font-medium">Tokens salida</th>
-                    <th className="px-4 py-2 text-right font-medium">Coste</th>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/40 text-xs text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left font-medium">Fecha</th>
+                  <th className="px-4 py-2 text-right font-medium">Tokens entrada</th>
+                  <th className="px-4 py-2 text-right font-medium">Tokens salida</th>
+                  <th className="px-4 py-2 text-right font-medium">Coste</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...entries].reverse().map((e, i) => (
+                  <tr key={i} className="border-b border-border/20 hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-2 tabular-nums text-muted-foreground">{fmtDate(e.ts)}</td>
+                    <td className="px-4 py-2 tabular-nums text-right">{e.in.toLocaleString()}</td>
+                    <td className="px-4 py-2 tabular-nums text-right">{e.out.toLocaleString()}</td>
+                    <td className="px-4 py-2 tabular-nums text-right font-medium">{fmt(e.cost)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {[...entries].reverse().map((e, i) => (
-                    <tr key={i} className="border-b border-border/20 hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-2 tabular-nums text-muted-foreground">{fmtDate(e.ts)}</td>
-                      <td className="px-4 py-2 tabular-nums text-right">{e.in.toLocaleString()}</td>
-                      <td className="px-4 py-2 tabular-nums text-right">{e.out.toLocaleString()}</td>
-                      <td className="px-4 py-2 tabular-nums text-right font-medium">{fmt(e.cost)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                ))}
+                {untrackedSpend > 0.00001 && (
+                  <tr className="border-t border-border/40 bg-muted/20">
+                    <td className="px-4 py-2 text-muted-foreground italic text-xs" colSpan={3}>
+                      Gasto previo al historial (sin detalle)
+                    </td>
+                    <td className="px-4 py-2 tabular-nums text-right font-medium text-muted-foreground">
+                      {fmt(untrackedSpend)}
+                    </td>
+                  </tr>
+                )}
+                <tr className="bg-muted/10 font-semibold">
+                  <td className="px-4 py-2 text-xs uppercase tracking-wider text-muted-foreground" colSpan={3}>
+                    Total
+                  </td>
+                  <td className="px-4 py-2 tabular-nums text-right">{fmt(spend)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </main>
